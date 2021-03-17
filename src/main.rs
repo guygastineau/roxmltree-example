@@ -1,7 +1,8 @@
-use roxmltree::Node as XmlNode;
-
 use std::fs;
 
+use roxmltree::{Document, Node as XmlNode};
+
+// these are pretty ugly otherwise ;)
 type RowStats = (usize, Vec<usize>);
 type TableStats = (usize, Vec<(usize, Vec<usize>)>);
 
@@ -35,10 +36,8 @@ fn main() -> Result<(), String> {
     let file = fs::read_to_string(DOCUMENT)
         .map_err(|err| format!("{}", err))?;
 
-    let doc = roxmltree::Document::parse(&file)
-        .map_err(|err| format!("{}", err))?;
-
-    let tbls: Vec<TableStats> = doc
+    let tables: Vec<TableStats> = Document::parse(&file)
+        .map_err(|err| format!("{}", err))?
         .descendants()
         .filter(is_name("tbl"))
         .map(|tbl| {
@@ -49,6 +48,12 @@ fn main() -> Result<(), String> {
         })
         .collect();
 
-    println!("{:?}", tbls);
+    println!("{:?}", tables);
+
+    let expected: Vec<TableStats> = vec![
+        (2, vec![(4, vec![2, 2, 2, 2]), (4, vec![2, 2, 2, 2])]),
+        (2, vec![(4, vec![2, 2, 2, 2]), (4, vec![2, 2, 2, 2])]),
+    ];
+    assert_eq!(tables, expected);
     Ok(())
 }
