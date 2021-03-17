@@ -2,9 +2,13 @@ use roxmltree;
 
 use std::fs;
 
+type RowStats = (usize, Vec<usize>);
+type TableStats = (usize, Vec<(usize, Vec<usize>)>);
+
 const DOCUMENT: &str = "document.xml";
 
-const NS: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const NS: &str =
+    "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 // Match names in the namespace NS.
 fn is_name(name: &'static str) -> impl FnMut(&roxmltree::Node) -> bool {
@@ -14,7 +18,7 @@ fn is_name(name: &'static str) -> impl FnMut(&roxmltree::Node) -> bool {
     }
 }
 
-fn process_row(node: roxmltree::Node) -> Option<(usize, Vec<usize>)> {
+fn row_stats(node: roxmltree::Node) -> Option<RowStats> {
     if !(is_name("tr")(&node)) {
         return None;
     }
@@ -34,17 +38,16 @@ fn main() -> Result<(), String> {
     let doc = roxmltree::Document::parse(&file)
         .map_err(|err| format!("{}", err))?;
 
-    let tbls: Vec<(usize, Vec<(usize, Vec<usize>)>)> = doc
+    let tbls: Vec<TableStats> = doc
         .descendants()
         .filter(is_name("tbl"))
         .map(|tbl| {
-            let rows = tbl
-                .children()
-                .filter_map(process_row)
-                .collect::<Vec<(usize, Vec<usize>)>>();
+            let rows: Vec<RowStats> =
+                tbl.children().filter_map(row_stats).collect();
 
             (rows.len(), rows)
-        }).collect();
+        })
+        .collect();
 
     println!("{:?}", tbls);
     Ok(())
